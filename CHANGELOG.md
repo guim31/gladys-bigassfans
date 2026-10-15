@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-15
+
 ### Added
 
 - One Gladys device per Big Ass Fans fan or light (Haiku, i6, es6, Haiku L),
@@ -31,4 +33,5 @@ the notes of the version's GitHub Release.
 - Feature names, messages and documentation in English, French, German and
   Spanish.
 
-[Unreleased]: https://github.com/guim31/gladys-bigassfans/commits/main
+[Unreleased]: https://github.com/guim31/gladys-bigassfans/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/guim31/gladys-bigassfans/releases/tag/v1.0.1
