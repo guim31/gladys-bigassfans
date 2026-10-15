@@ -1,147 +1,223 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Big Ass Fans",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Big Ass Fans ceiling fans (Haiku, i6, es6) on the local network: speed, whoosh, light, sensors.",
+    "fr": "Ventilateurs de plafond Big Ass Fans (Haiku, i6, es6) en local : vitesse, whoosh, lumière, capteurs.",
+    "de": "Big-Ass-Fans-Deckenventilatoren (Haiku, i6, es6) im lokalen Netz: Stufe, Whoosh, Licht, Sensoren.",
+    "es": "Ventiladores de techo Big Ass Fans (Haiku, i6, es6) en red local: velocidad, whoosh, luz, sensores."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-bigassfans:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-bigassfans/main/cover.png",
+  "categories": ["climate", "lighting"],
+  "transports": ["local"],
+  "network_discovery": [
+    {
+      "type": "mdns",
+      "service": "_api._tcp"
+    }
+  ],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Finding your fans",
+        "fr": "Trouver vos ventilateurs",
+        "de": "Deine Ventilatoren finden",
+        "es": "Encontrar sus ventiladores"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Fans and lights on the same network as Gladys are found automatically: open the Discovery tab. They need the firmware of the current Big Ass Fans app (Haiku 3.0 or later, i6, es6). If one is missing, enter its IP address below.",
+        "fr": "Les ventilateurs et lampes du même réseau que Gladys sont trouvés automatiquement : ouvrez l'onglet Découverte. Il leur faut le firmware de l'application Big Ass Fans actuelle (Haiku 3.0 ou plus, i6, es6). S'il en manque un, saisissez son adresse IP ci-dessous.",
+        "de": "Ventilatoren und Leuchten im selben Netzwerk wie Gladys werden automatisch gefunden: Öffne den Tab „Entdecken“. Nötig ist die Firmware der aktuellen Big-Ass-Fans-App (Haiku 3.0 oder neuer, i6, es6). Fehlt einer, gib unten seine IP-Adresse ein.",
+        "es": "Los ventiladores y luces de la misma red que Gladys se encuentran automáticamente: abra la pestaña Descubrimiento. Necesitan el firmware de la aplicación Big Ass Fans actual (Haiku 3.0 o posterior, i6, es6). Si falta uno, introduzca su dirección IP abajo."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-bigassfans/blob/main/docs/en.md",
+          "label": {
+            "en": "Setup guide",
+            "fr": "Guide d'installation",
+            "de": "Einrichtungsanleitung",
+            "es": "Guía de instalación"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "hosts",
+      "type": "string",
+      "label": {
+        "en": "IP addresses of the fans",
+        "fr": "Adresses IP des ventilateurs",
+        "de": "IP-Adressen der Ventilatoren",
+        "es": "Direcciones IP de los ventiladores"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "description": {
+        "en": "Optional, separated by commas. Only needed for the fans automatic discovery does not find.",
+        "fr": "Facultatif, séparées par des virgules. Seulement pour les ventilateurs que la découverte automatique ne trouve pas.",
+        "de": "Optional, durch Kommas getrennt. Nur für Ventilatoren, die die automatische Erkennung nicht findet.",
+        "es": "Opcional, separadas por comas. Solo para los ventiladores que el descubrimiento automático no encuentra."
+      },
+      "placeholder": {
+        "en": "e.g. 192.168.1.50, 192.168.1.51",
+        "fr": "ex. 192.168.1.50, 192.168.1.51",
+        "de": "z. B. 192.168.1.50, 192.168.1.51",
+        "es": "p. ej. 192.168.1.50, 192.168.1.51"
+      },
+      "required": false,
+      "default": ""
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
+      "key": "language",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
-      "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
-      ]
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "label": {
+        "en": "Language of the feature names",
+        "fr": "Langue des noms de fonctionnalités",
+        "de": "Sprache der Funktionsnamen",
+        "es": "Idioma de los nombres de funciones"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Names given to the features of new devices (Fan, Speed, Light...) and language of the error messages.",
+        "fr": "Noms donnés aux fonctionnalités des nouveaux appareils (Ventilateur, Vitesse, Éclairage…) et langue des messages d'erreur.",
+        "de": "Namen der Funktionen neuer Geräte (Ventilator, Geschwindigkeit, Licht …) und Sprache der Fehlermeldungen.",
+        "es": "Nombres de las funciones de los nuevos dispositivos (Ventilador, Velocidad, Luz…) e idioma de los mensajes de error."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": { "en": "English", "fr": "Anglais", "de": "Englisch", "es": "Inglés" }
+        },
+        {
+          "value": "fr",
+          "label": { "en": "French", "fr": "Français", "de": "Französisch", "es": "Francés" }
+        },
+        {
+          "value": "de",
+          "label": { "en": "German", "fr": "Allemand", "de": "Deutsch", "es": "Alemán" }
+        },
+        {
+          "value": "es",
+          "label": { "en": "Spanish", "fr": "Espagnol", "de": "Spanisch", "es": "Español" }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "search",
+      "label": {
+        "en": "Search for fans",
+        "fr": "Rechercher les ventilateurs",
+        "de": "Nach Ventilatoren suchen",
+        "es": "Buscar ventiladores"
+      },
+      "description": {
+        "en": "Looks for Big Ass Fans devices again and reports the ones found.",
+        "fr": "Cherche de nouveau les appareils Big Ass Fans et indique ceux trouvés.",
+        "de": "Sucht erneut nach Big-Ass-Fans-Geräten und zeigt die gefundenen an.",
+        "es": "Busca de nuevo los dispositivos Big Ass Fans e indica los encontrados."
+      },
+      "timeout_seconds": 60
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "fan_changed_outside_gladys",
+      "label": {
+        "en": "Fan switched outside Gladys",
+        "fr": "Ventilateur changé hors de Gladys",
+        "de": "Ventilator außerhalb von Gladys geschaltet",
+        "es": "Ventilador cambiado fuera de Gladys"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "A fan was turned off, on or to auto without Gladys: from its remote, its wall control, the Big Ass Fans app, or by itself (return to auto).",
+        "fr": "Un ventilateur a été arrêté, allumé ou mis en auto sans Gladys : depuis sa télécommande, sa commande murale, l'application Big Ass Fans, ou de lui-même (retour en auto).",
+        "de": "Ein Ventilator wurde ohne Gladys aus-, eingeschaltet oder auf Automatik gestellt: per Fernbedienung, Wandsteuerung, Big-Ass-Fans-App oder von selbst (Rückkehr zur Automatik).",
+        "es": "Un ventilador se ha apagado, encendido o puesto en automático sin Gladys: desde su mando, su control de pared, la aplicación Big Ass Fans o por sí mismo (vuelta al modo automático)."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": { "en": "Fan", "fr": "Ventilateur", "de": "Ventilator", "es": "Ventilador" }
         },
         {
-          "key": "target",
+          "key": "mode",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "label": {
+            "en": "New mode",
+            "fr": "Nouveau mode",
+            "de": "Neuer Modus",
+            "es": "Nuevo modo"
+          },
+          "description": {
+            "en": "Leave empty for any.",
+            "fr": "Laisser vide pour tous.",
+            "de": "Leer lassen für alle.",
+            "es": "Déjelo vacío para cualquiera."
+          },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "off",
+              "label": { "en": "Off", "fr": "Arrêt", "de": "Aus", "es": "Apagado" }
+            },
+            {
+              "value": "on",
+              "label": { "en": "On", "fr": "Marche", "de": "Ein", "es": "Encendido" }
+            },
+            {
+              "value": "auto",
+              "label": { "en": "Auto", "fr": "Auto", "de": "Automatik", "es": "Automático" }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "mode",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "New mode (off, on, auto)",
+            "fr": "Nouveau mode (off, on, auto)",
+            "de": "Neuer Modus (off, on, auto)",
+            "es": "Nuevo modo (off, on, auto)"
+          }
+        },
+        {
+          "key": "speed",
+          "type": "number",
+          "label": {
+            "en": "Speed (0 to 7)",
+            "fr": "Vitesse (0 à 7)",
+            "de": "Geschwindigkeit (0 bis 7)",
+            "es": "Velocidad (0 a 7)"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
+      "key": "boost",
+      "label": {
+        "en": "Boost the fan for a while",
+        "fr": "Faire tourner le ventilateur un moment",
+        "de": "Ventilator eine Weile hochdrehen",
+        "es": "Acelerar el ventilador un rato"
+      },
       "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+        "en": "Runs the fan at a speed for some minutes, then puts it back as it was (off, its speed or auto), unless someone changed it meanwhile.",
+        "fr": "Fait tourner le ventilateur à une vitesse pendant quelques minutes, puis le remet comme avant (arrêté, à sa vitesse ou en auto), sauf si quelqu'un l'a changé entre-temps.",
+        "de": "Lässt den Ventilator einige Minuten mit einer Geschwindigkeit laufen und stellt ihn danach zurück (aus, seine Geschwindigkeit oder Automatik), außer jemand hat ihn inzwischen geändert.",
+        "es": "Hace girar el ventilador a una velocidad durante unos minutos y luego lo deja como estaba (apagado, a su velocidad o en automático), salvo si alguien lo ha cambiado entretanto."
       },
       "timeout_seconds": 15,
       "fields": [
@@ -149,29 +225,50 @@
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": { "en": "Fan", "fr": "Ventilateur", "de": "Ventilator", "es": "Ventilador" },
           "required": true
+        },
+        {
+          "key": "speed",
+          "type": "number",
+          "label": {
+            "en": "Speed (1 to 7)",
+            "fr": "Vitesse (1 à 7)",
+            "de": "Geschwindigkeit (1 bis 7)",
+            "es": "Velocidad (1 a 7)"
+          },
+          "required": false,
+          "default": 7,
+          "min": 1,
+          "max": 7
+        },
+        {
+          "key": "minutes",
+          "type": "number",
+          "label": {
+            "en": "Duration (minutes)",
+            "fr": "Durée (minutes)",
+            "de": "Dauer (Minuten)",
+            "es": "Duración (minutos)"
+          },
+          "required": false,
+          "default": 15,
+          "min": 1,
+          "max": 720
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "until",
+          "type": "string",
+          "label": {
+            "en": "End of the boost (ISO date)",
+            "fr": "Fin du boost (date ISO)",
+            "de": "Ende des Boosts (ISO-Datum)",
+            "es": "Fin del impulso (fecha ISO)"
+          }
         }
       ]
-    }
-  ],
-  "widgets": [
-    {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
-      },
-      "icon": "activity",
-      "action_timeout_seconds": 15
     }
   ]
 }

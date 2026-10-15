@@ -1,67 +1,178 @@
-# Template de démonstration
+# Big Ass Fans
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Cette intégration pilote les ventilateurs de plafond et lampes **Big Ass Fans** depuis Gladys, en
+réseau local, sans compte cloud : Haiku (séries H/I, avec ou sans lumière), i6, es6 et les lampes
+Haiku L. Elle parle le protocole de l'application Big Ass Fans actuelle (port TCP 31415) et garde
+une connexion ouverte vers chaque ventilateur : un changement fait à la télécommande ou dans
+l'application apparaît aussitôt dans Gladys.
 
-## Ce que vous obtenez
+> **Développée sans le matériel : vos retours sont les bienvenus.** L'intégration suit le protocole
+> tel que le documentent la bibliothèque libre aiobafi6 et l'intégration `baf` de Home Assistant, et
+> elle est testée contre un ventilateur simulé, pas un vrai. Si votre ventilateur se comporte
+> autrement, ouvrez une issue : https://github.com/guim31/gladys-bigassfans/issues
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+Cette intégration n'est ni affiliée à Big Ass Fans, ni approuvée ou soutenue par Big Ass Fans.
+
+## Prérequis
+
+- Gladys Assistant **5.1 ou plus récent**.
+- Un ventilateur ou une lampe Big Ass Fans configuré dans **l'application Big Ass Fans actuelle**,
+  sur le même réseau local que Gladys. Les Haiku doivent avoir le **firmware 3.0 ou plus** ; les
+  anciens Haiku pilotés par l'application SenseME ne sont pas pris en charge.
+- Gladys doit pouvoir joindre le ventilateur sur le **port TCP 31415** (pas de pare-feu ni de réseau
+  invité entre les deux).
+- Donnez au ventilateur une adresse fixe dans votre box (réservation DHCP) : l'intégration suit un
+  changement d'adresse, mais une adresse fixe évite une courte perte de contrôle.
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+### Découverte automatique
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+Ouvrez l'intégration, puis l'onglet **Découverte** : les ventilateurs qui s'annoncent sur le réseau
+(service mDNS `_api._tcp`, capté par Gladys pour l'intégration) y sont listés sous le nom qu'ils
+portent dans l'application Big Ass Fans. Cliquez sur **Ajouter à Gladys** pour chacun.
 
-## Actions
+Le bouton **Rechercher les ventilateurs** de l'écran Configuration relance la recherche et indique
+ce qu'il a trouvé : les ventilateurs, leur adresse, et ceux qui ne répondent pas.
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+### Ajouter un ventilateur par son adresse IP
+
+Si un ventilateur n'est pas trouvé (autre segment de réseau, mDNS filtré par la box), saisissez son
+adresse IP dans **Adresses IP des ventilateurs**, séparées par des virgules. L'intégration s'y
+connecte directement.
+
+### Langue
+
+**Langue des noms de fonctionnalités** fixe les noms donnés aux fonctionnalités des nouveaux
+appareils (Ventilateur, Vitesse, Éclairage…) et la langue des messages d'erreur : anglais, français
+(par défaut), allemand ou espagnol. Gladys fige un nom à l'ajout de l'appareil ; pour le changer
+ensuite, renommez la fonctionnalité dans Gladys.
+
+## Appareils
+
+Un appareil Gladys par ventilateur, nommé comme dans l'application Big Ass Fans. Seul ce que
+l'appareil possède est créé.
+
+### Ventilateur
+
+| Fonctionnalité               | Rôle                                                                        |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| **Ventilateur**              | Marche / arrêt.                                                             |
+| **Mode auto du ventilateur** | Le mode auto du ventilateur (présence, Auto Comfort). Le couper l'arrête.   |
+| **Vitesse**                  | Les 7 vitesses du ventilateur, 0 quand il est arrêté. Une vitesse l'allume. |
+| **Sens de rotation**         | Avant (été) ou arrière (hiver), si le ventilateur sait s'inverser.          |
+| **Whoosh (brise naturelle)** | Fait varier la vitesse comme une brise naturelle.                           |
+
+Marche, arrêt et auto sont les trois positions d'un même mode : allumer **Ventilateur** quitte le
+mode auto, allumer **Mode auto du ventilateur** quitte la simple marche. Régler une vitesse quand
+le ventilateur est en mode auto le passe en marche à cette vitesse, comme l'application Big Ass
+Fans.
+
+### Éclairage
+
+Pour les ventilateurs avec lumière (vers le bas ou vers le haut) et les lampes Haiku L.
+
+| Fonctionnalité               | Rôle                                                                   |
+| ---------------------------- | ---------------------------------------------------------------------- |
+| **Éclairage**                | Marche / arrêt.                                                        |
+| **Mode auto de l'éclairage** | Le mode auto de la lumière (elle suit le détecteur de présence).       |
+| **Luminosité**               | 0 à 100 %, dans les 16 niveaux de la lampe. Une luminosité l'allume.   |
+| **Température de couleur**   | En kelvins, entre le blanc le plus chaud et le plus froid de la lampe. |
+
+### Capteurs
+
+En lecture seule, sur les ventilateurs qui en ont.
+
+| Fonctionnalité  | Rôle                                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Température** | La température mesurée par le ventilateur, en °C (ventilateurs avec Auto Comfort).                            |
+| **Humidité**    | L'humidité relative, en %, quand le ventilateur la mesure.                                                    |
+| **Présence**    | Quelqu'un est dans la pièce (Auto Comfort et firmware récent). Retombe après environ 4 min 30 sans mouvement. |
 
 ## Scènes
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+### Déclencheur : Ventilateur changé hors de Gladys
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+Se déclenche quand un ventilateur est arrêté, allumé ou mis en auto **sans Gladys** : depuis sa
+télécommande, sa commande murale, l'application Big Ass Fans, ou de lui-même (retour en auto). Les
+changements faits par Gladys ne le déclenchent jamais : une scène qui l'utilise ne peut pas boucler.
 
-## Tableau de bord
+- **Ventilateur** : un ventilateur, ou vide pour tous.
+- **Nouveau mode** : **Arrêt**, **Marche**, **Auto**, plusieurs, ou vide pour tous.
+- Variables pour les actions suivantes : le nouveau mode (`off`, `on`, `auto`) et la vitesse (0 à
+  7).
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+### Action : Faire tourner le ventilateur un moment
+
+Fait tourner le ventilateur à une vitesse (1 à 7, 7 par défaut) pendant quelques minutes (15 par
+défaut, 720 au plus), puis le remet comme avant : arrêté, à sa vitesse précédente, ou en mode auto.
+Si quelqu'un change le ventilateur pendant ce temps (vitesse, marche, auto), il reste comme on l'a
+laissé. Une nouvelle action sur le même ventilateur remplace celle en cours et rétablit toujours
+l'état d'avant la première. La fin est donnée en sortie (date ISO). Un redémarrage de l'intégration
+pendant ce temps annule le retour à l'état d'avant.
+
+### Exemples de scènes
+
+- **Brise du matin** : à 7 h en semaine, **Faire tourner le ventilateur un moment** dans la chambre,
+  vitesse 3 pendant 30 minutes.
+- **Clim coupée quand le ventilateur prend le relais** : déclencheur **Ventilateur changé hors de
+  Gladys** avec **Nouveau mode** = **Marche** → éteindre le climatiseur de la pièce.
+- **Hiver** : quand la température extérieure passe sous 10 °C, mettre **Sens de rotation** sur
+  arrière et **Vitesse** sur 1, pour redescendre l'air chaud du plafond sans courant d'air.
+- **Lumière à la présence** : quand **Présence** du ventilateur du salon passe à 1 après le coucher
+  du soleil, allumer **Éclairage** à 40 % de **Luminosité**.
+
+## Widget
+
+L'intégration ne propose pas de widget de tableau de bord : la boîte d'appareil de Gladys affiche
+et pilote déjà chaque fonctionnalité d'un ventilateur (marche, curseur de vitesse, sens, lumière),
+et le boost a sa place dans les scènes.
+
+## Rafraîchissement des ventilateurs
+
+- Les ventilateurs **poussent** leurs changements sur la connexion que l'intégration garde ouverte :
+  un changement fait à la télécommande apparaît en moins d'une seconde.
+- L'intégration **interroge aussi toutes les propriétés une fois par minute** (comme aiobafi6), ce
+  qui prouve que la connexion marche et rattrape un changement manqué ; Gladys elle-même n'interroge
+  jamais ces appareils.
+- Une valeur qui ne change pas est republiée toutes les 6 heures, pour que Gladys n'affiche jamais
+  « Pas de valeur récente ».
+- L'intégration cherche de nouveaux ventilateurs et de nouvelles adresses toutes les 15 minutes.
+- Pas de cloud, de compte ni de quota : tout reste sur votre réseau. Une connexion par ventilateur.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **Aucun ventilateur dans l'onglet Découverte** : vérifiez que le ventilateur marche dans
+  l'application Big Ass Fans sur le même réseau, puis appuyez sur **Rechercher les ventilateurs**.
+  Si le compte rendu dit que la découverte automatique est indisponible, ou si le ventilateur est
+  sur un autre segment de réseau, saisissez son adresse IP.
+- **« Ne répond pas »** : le ventilateur est coupé au disjoncteur, a changé d'adresse, ou quelque
+  chose bloque le port TCP 31415 entre Gladys et lui. L'intégration réessaie d'elle-même et écrit
+  une ligne de journal à son retour.
+- **Un Haiku n'est jamais trouvé** : il a peut-être encore le firmware SenseME (avant 3.0). Mettez-le
+  à jour depuis l'application Big Ass Fans.
+- **Une fonctionnalité manque** : seules les fonctionnalités que le ventilateur annonce sont créées.
+  Un capteur qui apparaît plus tard (après une mise à jour) est proposé par un bouton **Mettre à
+  jour** dans l'onglet Découverte.
+- **Journaux détaillés** : définissez la variable d'environnement `LOG_LEVEL=debug` sur
+  l'intégration pour voir chaque connexion et chaque interrogation.
+
+## Limites
+
+- Développée et testée sans vrai ventilateur (voir plus haut) : les vitesses, niveaux de lumière et
+  modes suivent aiobafi6 et Home Assistant.
+- L'ancien protocole SenseME (Haiku avant le firmware 3.0, en UDP) n'est pas pris en charge.
+- Le mode veille (sommeil), les programmations, les pièces, les réglages Auto Comfort (température
+  idéale, plage de vitesses), le mode éco, les voyants et le bip ne sont pas exposés : le protocole
+  n'offre pas de mode veille, et les autres sont des réglages faits une fois dans l'application Big
+  Ass Fans.
+- La vitesse de rotation (tr/min) n'est pas publiée.
+- Certains ventilateurs n'acceptent peut-être qu'une connexion locale à la fois : si une autre
+  domotique est connectée au même ventilateur, l'une des deux peut la perdre.
+- Un boost en cours n'est pas rétabli après un redémarrage de l'intégration.
+
+## Crédits
+
+La connaissance du protocole vient d'[aiobafi6](https://github.com/jfroy/aiobafi6) (jfroy) et de
+l'intégration `baf` de Home Assistant (bdraco, jfroy), toutes deux sous licence Apache 2.0. Big Ass
+Fans, Haiku, i6 et es6 sont des marques de leur propriétaire.
