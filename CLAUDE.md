@@ -31,16 +31,26 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+index.js                          SDK wiring only: registerHandlers, shutdown, connect()
+src/app.js                        every SDK handler, registered before connect(); returns the hub
+src/hub.js                        FanHub: discovery, one session (TCP link) per address, records by
+                                  fan UUID, states, commands, scene trigger, boost, logs
+src/baf/proto.js                  hand-written protobuf codec of the i6 messages (aiobafi6 proto)
+src/baf/slip.js                   SLIP framing of the TCP stream
+src/baf/link.js                   FanLink: one TCP connection to port 31415, reconnect, query/minute
+src/baf/model.js                  capabilities from the properties (aiobafi6 / Home Assistant rules)
+src/devices.js                    Gladys device, feature names (4 languages), values, commands
+src/discovery.js                  mDNS records (_api._tcp, relayed by the core) -> fans
+src/scenes.js                     scene action handler (boost)
+src/texts.js                      messages sent to Gladys (4 languages)
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
-gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+src/store.js, src/problems.js     /data persistence; one log line per problem start / end
+gladys-assistant-integration.json manifest: name, config_schema, actions, scenes, discovery...
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (same sections)
+scripts/probe.mjs                 read-only probe of a real fan (one query, private values masked)
+scripts/fake-fan.mjs              the fake fan of the tests on 127.0.0.1, to try without hardware
+test/                             node --test, against the SDK's fake Gladys and fake TCP fans
+test/fixtures/baf/                property sets of five device kinds (reconstructed, see README)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +80,9 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, manifest texts, feature names and `docs/{en,fr,de,es}.md`, kept in
+  sync (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -233,3 +244,59 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Intégration Big Ass Fans
+
+**Protocole** (aiobafi6 de jfroy, Apache 2.0, seule description publique) : TCP 31415, messages
+protobuf encadrés en SLIP (0xC0, échappements 0xDB 0xDC / 0xDB 0xDD). `Root.root2.query` (ALL = 0)
+demande tout ; la réponse arrive en **plusieurs** `query_result`, puis le ventilateur **pousse** chaque
+changement sur la même connexion ; `Root.root2.commit.properties` écrit. Les champs sont ceux de
+`proto/aiobafi6.proto` : on les a recopiés dans `src/baf/proto.js` (codec écrit à la main, sans
+dépendance). Champs inconnus ignorés (comme `DiscardUnknownFields`) ; un `int32` négatif tient sur
+10 octets (température sous 0 °C).
+
+**Choix tranchés** (à garder sauf retour de terrain) :
+
+- Clé de l'appareil : `dns_sd_uuid` (l'UUID de l'annonce mDNS, celle de Home Assistant), jamais l'IP
+  ni le nom. Type d'external id : `fan`. Clés de fonctionnalités : `fan`, `fan-auto`, `speed`,
+  `direction`, `whoosh`, `light`, `light-auto`, `brightness`, `color-temperature`, `temperature`,
+  `humidity`, `occupancy` : figées.
+- Les fonctionnalités suivent les **drapeaux et propriétés** remontés (`has_light` **ou**
+  `has_uplight`, Auto Comfort = `has_comfort1` et `has_comfort3`, présence si API ≥ 5), jamais le nom
+  du modèle. Elles ne font que **croître** (`mergeCapabilities`), persistées dans `/data`.
+- On n'écrit que ce que Home Assistant écrit (`fan_mode`, `speed`, `reverse_enable`, `whoosh_enable`,
+  `light_mode`, `light_brightness_level`, `light_color_temperature`), **un commit par propriété**
+  (aiobafi6 ignore si le firmware en accepte plusieurs). La luminosité s'écrit en niveau 1-16, se lit
+  en pourcentage.
+- Marche / arrêt / auto = un seul mode à trois positions, publié en deux `switch/binary`
+  (Ventilateur, Mode auto) : couper l'auto **arrête** le ventilateur. `fan/mode` du cœur n'a pas été
+  retenu : il impose Arrêt/Faible/Moyen/Fort/Auto, sans rapport avec les 7 vitesses. `fan/wind-setting`
+  non plus pour le whoosh : sa liste propose aussi « Vent nuit », que le protocole n'a pas.
+- Vitesse publiée à 0 quand le ventilateur est arrêté (le firmware garde la dernière vitesse).
+- Pas de widget (la boîte d'appareil fait tout), un déclencheur (changement de mode hors de Gladys :
+  l'écriture optimiste avant la confirmation du ventilateur empêche une commande de Gladys de le
+  déclencher), une action de scène (boost avec retour à l'état d'avant).
+- Pas de mode veille : le protocole i6 n'en a pas (README d'aiobafi6). L'ancien protocole SenseME
+  (UDP, Haiku avant le firmware 3.0) n'est pas pris en charge.
+
+**Pièges rencontrés ici :**
+
+- La réponse à une requête arrive en plusieurs messages : un appareil n'est annoncé qu'après un
+  silence de `settleMs` suivant son identification (propriétés requises d'aiobafi6), sinon la
+  découverte publierait un appareil incomplet puis un « Mettre à jour ».
+- À chaque reconnexion, repartir de propriétés **vides** : une autre machine peut répondre à l'adresse
+  (DHCP), ses champs ne doivent pas se mêler à ceux de l'ancienne.
+- Tests : mocker `process.stdout.write` dans un test `node --test` **avale les comptes rendus du
+  lanceur** (le processus enfant les écrit sur stdout) : un test disparaît du total sans échouer. Ne
+  capturer que les lignes du logger (préfixe `[horodatage]`) et laisser passer le reste
+  (`test/logs.test.js`).
+- Tests : `t.mock.timers` sur `setTimeout` **avant** la création du monde bloque le délai de
+  stabilisation et `until()` : activer le mock après, ou ne mocker que `setInterval`.
+- Allemand : le garde-fou du « Sie » de politesse attrape aussi « Sie » = « ils/elle » en début de
+  phrase. Reformuler (« Die Integration … », « Nötig ist … »).
+- L'ack d'une action de configuration arrive dans `data.message`, celui d'une action de scène dans
+  `data.outputs` (faux Gladys du SDK).
+
+**Non vérifié faute de matériel** : propriétés exactes de chaque modèle/firmware, noms de modèles,
+acceptation de commits rapprochés, connexions simultanées (HA + Gladys). Premier geste sur un vrai
+ventilateur : `node scripts/probe.mjs <ip> --raw`.

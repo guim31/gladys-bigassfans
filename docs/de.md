@@ -1,0 +1,177 @@
+# Big Ass Fans
+
+Diese Integration steuert **Big-Ass-Fans**-Deckenventilatoren und -Leuchten aus Gladys, im lokalen
+Netzwerk, ohne Cloud-Konto: Haiku (H/I-Serie, mit oder ohne Licht), i6, es6 und die Haiku-L-Leuchten.
+Die Integration spricht das Protokoll der aktuellen Big-Ass-Fans-App (TCP-Port 31415) und hält zu jedem
+Ventilator eine Verbindung offen: Eine Änderung per Fernbedienung oder App erscheint sofort in
+Gladys.
+
+> **Ohne die Hardware entwickelt: Rückmeldungen willkommen.** Die Integration folgt dem Protokoll,
+> wie es die freie Bibliothek aiobafi6 und die Home-Assistant-Integration `baf` beschreiben, und wird
+> gegen einen simulierten Ventilator getestet, nicht gegen einen echten. Verhält sich dein
+> Ventilator anders, eröffne bitte ein Issue: https://github.com/guim31/gladys-bigassfans/issues
+
+Diese Integration ist weder mit Big Ass Fans verbunden noch von Big Ass Fans unterstützt.
+
+## Voraussetzungen
+
+- Gladys Assistant **5.1 oder neuer**.
+- Ein Big-Ass-Fans-Ventilator oder eine Leuchte, eingerichtet in der **aktuellen Big-Ass-Fans-App**,
+  im selben lokalen Netzwerk wie Gladys. Haiku-Ventilatoren brauchen **Firmware 3.0 oder neuer**;
+  ältere Haiku mit der früheren SenseME-App werden nicht unterstützt.
+- Gladys muss den Ventilator über **TCP-Port 31415** erreichen (keine Firewall und kein Gastnetz
+  dazwischen).
+- Gib dem Ventilator eine feste Adresse in deinem Router (DHCP-Reservierung): Die Integration folgt
+  einer Adressänderung, aber eine feste Adresse vermeidet einen kurzen Kontrollverlust.
+
+## Konfiguration
+
+### Automatische Erkennung
+
+Öffne die Integration und dann den Tab **Entdecken**: Die Ventilatoren, die sich im Netzwerk
+ankündigen (mDNS-Dienst `_api._tcp`, von Gladys für die Integration erfasst), erscheinen mit dem
+Namen aus der Big-Ass-Fans-App. Klicke bei jedem gewünschten auf **Zu Gladys hinzufügen**.
+
+Die Schaltfläche **Nach Ventilatoren suchen** im Konfigurationsbildschirm startet die Suche erneut
+und zeigt das Ergebnis: die Ventilatoren, ihre Adresse und die, die nicht antworten.
+
+### Einen Ventilator über seine IP-Adresse hinzufügen
+
+Wird ein Ventilator nicht gefunden (anderes Netzwerksegment, mDNS vom Router gefiltert), gib seine
+IP-Adresse unter **IP-Adressen der Ventilatoren** ein, durch Kommas getrennt. Die Integration
+verbindet sich direkt damit.
+
+### Sprache
+
+**Sprache der Funktionsnamen** legt die Namen der Funktionen neuer Geräte fest (Ventilator,
+Geschwindigkeit, Licht …) und die Sprache der Fehlermeldungen: Englisch, Französisch (Standard),
+Deutsch oder Spanisch. Gladys friert einen Namen beim Hinzufügen des Geräts ein; um ihn später zu
+ändern, benenne die Funktion in Gladys um.
+
+## Geräte
+
+Ein Gladys-Gerät pro Ventilator, benannt wie in der Big-Ass-Fans-App. Nur was das Gerät hat, wird
+angelegt.
+
+### Ventilator
+
+| Funktion                      | Was sie tut                                                                            |
+| ----------------------------- | -------------------------------------------------------------------------------------- |
+| **Ventilator**                | Ein / aus.                                                                             |
+| **Ventilator-Automatik**      | Der eigene Automatikmodus des Ventilators (Anwesenheit, Auto Comfort). Aus stoppt ihn. |
+| **Geschwindigkeit**           | Die 7 Stufen des Ventilators, 0 wenn er aus ist. Eine Stufe schaltet ihn ein.          |
+| **Drehrichtung**              | Vorwärts (Sommer) oder rückwärts (Winter), wenn der Ventilator umkehren kann.          |
+| **Whoosh (natürliche Brise)** | Lässt die Geschwindigkeit wie eine natürliche Brise schwanken.                         |
+
+Ein, aus und Automatik sind die drei Stellungen desselben Modus: **Ventilator** ein verlässt die
+Automatik, **Ventilator-Automatik** ein verlässt das einfache „Ein“. Eine Geschwindigkeit im
+Automatikmodus schaltet auf „Ein“ mit dieser Stufe, wie die Big-Ass-Fans-App.
+
+### Licht
+
+Für die Ventilatoren mit Down- oder Uplight und die Haiku-L-Leuchten.
+
+| Funktion            | Was sie tut                                                                  |
+| ------------------- | ---------------------------------------------------------------------------- |
+| **Licht**           | Ein / aus.                                                                   |
+| **Licht-Automatik** | Der eigene Automatikmodus des Lichts (es folgt dem Anwesenheitssensor).      |
+| **Helligkeit**      | 0 bis 100 %, in den 16 Stufen der Leuchte. Eine Helligkeit schaltet sie ein. |
+| **Farbtemperatur**  | In Kelvin, zwischen dem wärmsten und dem kältesten Weiß der Leuchte.         |
+
+### Sensoren
+
+Nur lesbar, bei den Ventilatoren, die sie haben.
+
+| Funktion             | Was sie tut                                                                                                |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Temperatur**       | Die vom Ventilator gemessene Temperatur in °C (Ventilatoren mit Auto Comfort).                             |
+| **Luftfeuchtigkeit** | Die relative Luftfeuchtigkeit in %, wenn der Ventilator sie misst.                                         |
+| **Anwesenheit**      | Jemand ist im Raum (Auto Comfort und aktuelle Firmware). Fällt nach etwa 4,5 Minuten ohne Bewegung zurück. |
+
+## Szenen
+
+### Auslöser: Ventilator außerhalb von Gladys geschaltet
+
+Löst aus, wenn ein Ventilator **ohne Gladys** aus-, eingeschaltet oder auf Automatik gestellt wird:
+per Fernbedienung, Wandsteuerung, Big-Ass-Fans-App oder von selbst (Rückkehr zur Automatik).
+Änderungen durch Gladys lösen ihn nie aus: Eine Szene damit kann keine Schleife bilden.
+
+- **Ventilator**: ein Ventilator, oder leer für alle.
+- **Neuer Modus**: **Aus**, **Ein**, **Automatik**, mehrere, oder leer für jeden.
+- Variablen für die folgenden Aktionen: der neue Modus (`off`, `on`, `auto`) und die
+  Geschwindigkeit (0 bis 7).
+
+### Aktion: Ventilator eine Weile hochdrehen
+
+Lässt den Ventilator mit einer Geschwindigkeit (1 bis 7, Standard 7) einige Minuten laufen
+(Standard 15, höchstens 720) und stellt ihn danach zurück: aus, auf seine vorige Stufe oder auf
+Automatik. Ändert jemand den Ventilator in der Zwischenzeit (Stufe, ein/aus, Automatik), bleibt er
+so, wie er eingestellt wurde. Eine neue Aktion auf demselben Ventilator ersetzt die laufende und
+stellt trotzdem den Zustand vor der ersten wieder her. Das Ende wird als Ausgabe geliefert
+(ISO-Datum). Ein Neustart der Integration währenddessen bricht die Rückstellung ab.
+
+### Szenenbeispiele
+
+- **Morgenbrise**: werktags um 7:00 **Ventilator eine Weile hochdrehen** im Schlafzimmer, Stufe 3
+  für 30 Minuten.
+- **Klimaanlage aus, wenn der Ventilator übernimmt**: Auslöser **Ventilator außerhalb von Gladys
+  geschaltet** mit **Neuer Modus** = **Ein** → die Klimaanlage des Raums ausschalten.
+- **Winter**: Wenn die Außentemperatur unter 10 °C fällt, **Drehrichtung** auf rückwärts und
+  **Geschwindigkeit** auf 1 stellen, damit die warme Luft unter der Decke ohne Zugluft nach unten
+  kommt.
+- **Licht bei Anwesenheit**: Wenn **Anwesenheit** des Wohnzimmerventilators nach Sonnenuntergang auf
+  1 geht, **Licht** mit 40 % **Helligkeit** einschalten.
+
+## Widget
+
+Die Integration bietet kein Dashboard-Widget: Die Gerätebox von Gladys zeigt und steuert bereits
+jede Funktion eines Ventilators (ein/aus, Geschwindigkeitsregler, Richtung, Licht), und der Boost
+gehört in Szenen.
+
+## So werden die Ventilatoren aktualisiert
+
+- Die Ventilatoren **senden** ihre Änderungen über die Verbindung, die die Integration offen hält:
+  Eine Änderung per Fernbedienung erscheint in weniger als einer Sekunde.
+- Die Integration **fragt außerdem einmal pro Minute alle Eigenschaften ab** (wie aiobafi6), was
+  die Verbindung prüft und eine verpasste Änderung nachholt; Gladys selbst fragt diese Geräte nie ab.
+- Ein Wert, der sich nicht ändert, wird alle 6 Stunden erneut gesendet, damit Gladys nie „Kein
+  aktueller Wert“ anzeigt.
+- Die Integration sucht alle 15 Minuten nach neuen Ventilatoren und neuen Adressen.
+- Keine Cloud, kein Konto, kein Kontingent: Alles bleibt in deinem Netzwerk. Eine Verbindung pro
+  Ventilator.
+
+## Fehlerbehebung
+
+- **Kein Ventilator im Tab Entdecken**: Prüfe, ob der Ventilator in der Big-Ass-Fans-App im selben
+  Netzwerk funktioniert, und drücke dann **Nach Ventilatoren suchen**. Meldet der Bericht, dass die
+  automatische Erkennung nicht verfügbar ist, oder ist der Ventilator in einem anderen
+  Netzwerksegment, gib seine IP-Adresse ein.
+- **„Antwortet nicht“**: Der Ventilator ist an der Sicherung aus, hat die Adresse gewechselt, oder
+  etwas blockiert TCP-Port 31415 zwischen Gladys und dem Ventilator. Die Integration versucht es
+  selbst erneut und schreibt eine Protokollzeile, wenn er zurück ist.
+- **Ein Haiku wird nie gefunden**: Er hat vielleicht noch die SenseME-Firmware (vor 3.0).
+  Aktualisiere ihn über die Big-Ass-Fans-App.
+- **Eine Funktion fehlt**: Nur die Funktionen, die der Ventilator meldet, werden angelegt. Ein
+  Sensor, der später erscheint (nach einem Update), wird über die Schaltfläche **Aktualisieren** im
+  Tab Entdecken angeboten.
+- **Ausführliche Protokolle**: Setze die Umgebungsvariable `LOG_LEVEL=debug` für die Integration,
+  um jede Verbindung und Abfrage zu sehen.
+
+## Grenzen
+
+- Ohne echten Ventilator entwickelt und getestet (siehe oben): Stufen, Lichtstufen und Modi folgen
+  aiobafi6 und Home Assistant.
+- Das frühere SenseME-Protokoll (Haiku vor Firmware 3.0, UDP) wird nicht unterstützt.
+- Schlafmodus, Zeitpläne, Räume, Auto-Comfort-Einstellungen (Wunschtemperatur, Stufenbereich),
+  Eco-Modus, LED-Anzeigen und Piepton sind nicht verfügbar: Das Protokoll bietet keinen Schlafmodus,
+  und der Rest sind Einstellungen, die man einmal in der Big-Ass-Fans-App vornimmt.
+- Die Drehzahl (U/min) wird nicht veröffentlicht.
+- Manche Ventilatoren akzeptieren vielleicht nur eine lokale Verbindung gleichzeitig: Ist ein
+  anderes Smart-Home-System mit demselben Ventilator verbunden, kann eines von beiden sie verlieren.
+- Ein laufender Boost wird nach einem Neustart der Integration nicht zurückgestellt.
+
+## Danksagung
+
+Das Wissen über das Protokoll stammt von [aiobafi6](https://github.com/jfroy/aiobafi6) (jfroy) und
+der Home-Assistant-Integration `baf` (bdraco, jfroy), beide unter der Apache-2.0-Lizenz. Big Ass
+Fans, Haiku, i6 und es6 sind Marken ihres Inhabers.

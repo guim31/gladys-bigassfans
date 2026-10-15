@@ -1,0 +1,18 @@
+{
+  "name": "Bureau",
+  "model": "es6",
+  "firmware_version": "3.0.2",
+  "mac_address": "02:00:5e:10:00:04",
+  "dns_sd_uuid": "6f1d1c2e0a7b4c55a3e9d4b2c1f00004",
+  "api_version": "4",
+  "capabilities": {},
+  "fan_mode": 1,
+  "speed": 7,
+  "speed_percent": 100,
+  "target_rpm": 210,
+  "current_rpm": 208,
+  "temperature": 2400,
+  "humidity": 255,
+  "ip_address": "192.0.2.13",
+  "wifi": { "ssid": "example-network" }
+}

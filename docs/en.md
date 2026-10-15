@@ -1,61 +1,167 @@
-# Demo Devices Template
+# Big Ass Fans
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+This integration controls **Big Ass Fans** ceiling fans and lights from Gladys, on the local
+network, without any cloud account: Haiku (H/I Series, with or without light), i6, es6 and the
+Haiku L lights. It speaks the protocol of the current Big Ass Fans app (TCP port 31415) and keeps
+one connection open to each fan, so a change made with the remote or the app shows in Gladys at
+once.
 
-## What you get
+> **Developed without the hardware: feedback welcome.** The integration follows the protocol as
+> documented by the open-source library aiobafi6 and the Home Assistant `baf` integration, and is
+> tested against a simulated fan, not a real one. If something behaves differently on your fan,
+> please open an issue: https://github.com/guim31/gladys-bigassfans/issues
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+This integration is not affiliated with, endorsed or sponsored by Big Ass Fans.
+
+## Prerequisites
+
+- Gladys Assistant **5.1 or later**.
+- A Big Ass Fans fan or light set up in the **current Big Ass Fans app**, on the same local network
+  as Gladys. Haiku fans need **firmware 3.0 or later**; older Haiku fans driven by the former
+  SenseME app are not supported.
+- Gladys must be able to reach the fan on **TCP port 31415** (no firewall or guest network
+  between them).
+- Give the fan a fixed address in your router (DHCP reservation): the integration follows an
+  address change, but a fixed one avoids a short loss of control.
 
 ## Configuration
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+### Automatic discovery
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+Open the integration, then the **Discovery** tab: the fans that announce themselves on the network
+(mDNS service `_api._tcp`, captured by Gladys for the integration) are listed with the name they
+have in the Big Ass Fans app. Click **Add to Gladys** on each one you want.
 
-## Actions
+The **Search for fans** button of the Configuration screen runs the search again and reports what
+it found: the fans, their address, and the ones that do not answer.
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+### Adding a fan by its IP address
+
+If a fan is not found (another network segment, mDNS filtered by the router), enter its IP address
+in **IP addresses of the fans**, separated by commas. The integration connects to it directly.
+
+### Language
+
+**Language of the feature names** sets the names given to the features of new devices (Fan, Speed,
+Light...) and the language of the error messages: English, French (default), German or Spanish.
+Gladys freezes a name when the device is added; to change it later, rename the feature in Gladys.
+
+## Devices
+
+One Gladys device per fan, named as in the Big Ass Fans app. Only what the device has is created.
+
+### Fan
+
+| Feature                     | What it does                                                          |
+| --------------------------- | --------------------------------------------------------------------- |
+| **Fan**                     | On / off.                                                             |
+| **Fan auto mode**           | The fan's own auto mode (occupancy, Auto Comfort). Off stops the fan. |
+| **Speed**                   | The 7 speeds of the fan, 0 when it is off. A speed turns it on.       |
+| **Direction**               | Forward (summer) or reverse (winter), when the fan can reverse.       |
+| **Whoosh (natural breeze)** | Varies the speed like a natural breeze.                               |
+
+On, off and auto are the three positions of the same mode: **Fan** on leaves the auto mode, **Fan
+auto mode** on leaves the plain "on". Setting a speed while the fan is in auto mode switches it to
+plain "on" at that speed, like the Big Ass Fans app does.
+
+### Light
+
+For the fans with a downlight or an uplight, and the Haiku L lights.
+
+| Feature               | What it does                                                         |
+| --------------------- | -------------------------------------------------------------------- |
+| **Light**             | On / off.                                                            |
+| **Light auto mode**   | The light's own auto mode (it follows the occupancy sensor).         |
+| **Brightness**        | 0 to 100 %, in the 16 steps of the light. A brightness turns it on.  |
+| **Color temperature** | In kelvins, between the warmest and coolest white the light reports. |
+
+### Sensors
+
+Read only, on the fans that have them.
+
+| Feature         | What it does                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Temperature** | The temperature the fan measures, in °C (fans with Auto Comfort).                                                        |
+| **Humidity**    | The relative humidity, in %, when the fan measures it.                                                                   |
+| **Occupancy**   | Someone is in the room (fans with Auto Comfort and a recent firmware). It resets after about 4.5 minutes without motion. |
 
 ## Scenes
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+### Trigger: Fan switched outside Gladys
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+Fires when a fan is turned off, on or to auto **without Gladys**: from its remote, its wall
+control, the Big Ass Fans app, or by itself (return to auto). The changes Gladys makes never fire
+it, so a scene using it cannot loop.
 
-## Dashboard
+- **Fan**: one fan, or empty for all.
+- **New mode**: **Off**, **On**, **Auto**, several, or empty for any.
+- Variables for the next actions: the new mode (`off`, `on`, `auto`) and the speed (0 to 7).
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+### Action: Boost the fan for a while
+
+Runs the fan at a speed (1 to 7, default 7) for some minutes (default 15, at most 720), then puts it
+back as it was: off, at its previous speed, or in auto mode. If someone changes the fan during the
+boost (speed, on/off, auto), it is left as they set it. A new boost on the same fan replaces the
+running one and still restores the state from before the first. The end of the boost is given as
+an output (ISO date). A restart of the integration during a boost cancels the restore.
+
+### Scene examples
+
+- **Morning breeze**: at 7:00 on weekdays, **Boost the fan for a while** in the bedroom at speed 3
+  for 30 minutes.
+- **Air conditioning off when the fan takes over**: trigger **Fan switched outside Gladys** with
+  **New mode** = **On** → turn the air conditioner of the room off.
+- **Winter**: when the outdoor temperature drops below 10 °C, set **Direction** to reverse and
+  **Speed** to 1, so the warm air under the ceiling comes down without a draft.
+- **Light with presence**: when **Occupancy** of the living-room fan goes to 1 after sunset, turn
+  **Light** on at 40 % **Brightness**.
+
+## Widget
+
+The integration offers no dashboard widget: the Gladys device box already shows and drives every
+feature of a fan (on/off, speed slider, direction, light), and the boost belongs in scenes.
+
+## How the fans are refreshed
+
+- The fans **push** their changes on the connection the integration keeps open: a change from the
+  remote shows within a second.
+- The integration also **queries every property once a minute** (as aiobafi6 does), which proves
+  the connection works and catches a missed change; Gladys itself never polls these devices.
+- A value that does not change is published again every 6 hours, so Gladys never shows "no recent
+  value".
+- The integration looks for new fans and new addresses every 15 minutes.
+- There is no cloud, account or quota: everything stays on your network. One connection per fan.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **No fan in the Discovery tab**: check that the fan works in the Big Ass Fans app on the same
+  network, then press **Search for fans**. If the report says the automatic discovery is
+  unavailable, or the fan is on another network segment, enter its IP address.
+- **"Does not answer"**: the fan is off at the breaker, changed address, or something blocks TCP
+  port 31415 between Gladys and the fan. The integration retries by itself and logs one line when
+  it comes back.
+- **A Haiku fan is never found**: it may still run the SenseME firmware (before 3.0). Update it from
+  the Big Ass Fans app.
+- **A feature is missing**: only the features the fan reports are created. A sensor that appears
+  later (after an update) is offered by an **Update** button in the Discovery tab.
+- **Detailed logs**: set the environment variable `LOG_LEVEL=debug` on the integration to see
+  every connection and query.
+
+## Limits
+
+- Developed and tested without a real fan (see above): the speeds, light levels and modes follow
+  aiobafi6 and Home Assistant.
+- The former SenseME protocol (Haiku fans before firmware 3.0, UDP) is not supported.
+- Sleep mode, schedules, rooms, Auto Comfort settings (ideal temperature, speed range), the eco
+  mode, the LED indicators and the beep are not exposed: the protocol does not offer sleep mode,
+  and the others are settings made once in the Big Ass Fans app.
+- The fan's RPM is not published.
+- Some fans may accept only one local connection at a time: if another home automation system is
+  connected to the same fan, one of them may lose it.
+- A boost in progress is not restored after a restart of the integration.
+
+## Credits
+
+The protocol knowledge comes from [aiobafi6](https://github.com/jfroy/aiobafi6) (jfroy) and from
+the Home Assistant `baf` integration (bdraco, jfroy), both under the Apache 2.0 license. Big Ass
+Fans, Haiku, i6 and es6 are trademarks of their owner.

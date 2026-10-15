@@ -1,0 +1,18 @@
+{
+  "name": "Entrée",
+  "model": "Haiku L Series",
+  "firmware_version": "3.1.0",
+  "mac_address": "02:00:5e:10:00:05",
+  "dns_sd_uuid": "6f1d1c2e0a7b4c55a3e9d4b2c1f00005",
+  "api_version": "5",
+  "capabilities": { "has_light": true },
+  "light_mode": 2,
+  "light_brightness_percent": 81,
+  "light_brightness_level": 13,
+  "light_color_temperature": 3500,
+  "light_warmest_color_temperature": 2200,
+  "light_coolest_color_temperature": 5000,
+  "light_dim_to_warm_enable": true,
+  "ip_address": "192.0.2.14",
+  "wifi": { "ssid": "example-network" }
+}
